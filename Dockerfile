@@ -1,18 +1,19 @@
 FROM debian:bookworm-slim
 
-RUN apt-get update && \
-    apt-get upgrade -y && \
-    apt-get install -y wget curl git python3 python3-pip neofetch && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN apt update && apt install -y curl gnupg ca-certificates lsb-release && \
+    curl -sSL https://packages.sury.org/php/README.txt | bash -s && \
+    apt update && apt install -y php8.3 php8.3-{cli,common,gd,mysql,mbstring,bcmath,xml,fpm,curl,zip,redis,intl} nginx composer cron unzip && \
+    rm -rf /var/lib/apt/lists/*
 
-RUN wget -qO /bin/ttyd https://github.com/tsl0922/ttyd/releases/download/1.7.3/ttyd.x86_64 && \
-    chmod +x /bin/ttyd
+RUN mkdir -p /var/www/pterodactyl && cd /var/www/pterodactyl && \
+    curl -Lo panel.tar.gz https://github.com/pterodactyl/panel/releases/latest/download/panel.tar.gz && \
+    tar -xzf panel.tar.gz && rm panel.tar.gz && \
+    chmod -R 755 storage bootstrap/cache && \
+    cp .env.example .env
 
-RUN echo "neofetch" >> /root/.bashrc && \
-    echo "cd /root" >> /root/.bashrc
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
 
-EXPOSE $PORT
+EXPOSE 8080
 
-CMD ["/bin/bash", "-c", "\
-    echo \"export PS1='\\[\\033[01;31m\\]$USERNAME@\\h\\[\\033[00m\\]:\\[\\033[01;34m\\]\\w\\[\\033[00m\\]\\$ '\" >> /root/.bashrc && \
-    /bin/ttyd -p $PORT -c $USERNAME:$PASSWORD /bin/bash"]
+CMD ["/start.sh"]
